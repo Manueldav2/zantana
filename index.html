@@ -958,7 +958,8 @@ function advanceVote(everyoneVoted){
   hostState.phase = 'reveal';
   broadcastState();
   if(role==='host' && (counts.a>0 || counts.b>0)) fireConfetti({ particleCount:60, origin:{y:.4} });
-  setTimeout(()=>{
+  // Worker timer (not setTimeout) so background tabs still advance
+  startTimer(()=>{
     if(hostState.voteIdx < hostState.prompts.length-1){
       hostState.voteIdx++;
       hostState.phase = 'voting';
@@ -969,7 +970,7 @@ function advanceVote(everyoneVoted){
     } else {
       endRound();
     }
-  }, 4500);
+  });
 }
 
 function endRound(){
@@ -977,7 +978,7 @@ function endRound(){
   hostState.deadline = Date.now() + 8000;
   broadcastState();
   if(role==='host') fireConfetti({ particleCount:100, spread:120, origin:{y:.3} });
-  setTimeout(()=>{
+  startTimer(()=>{
     if(hostState.round < hostState.totalRounds){
       hostState.round++; startRound();
     } else {
@@ -985,7 +986,7 @@ function endRound(){
       broadcastState();
       if(role==='host') fireBigConfetti();
     }
-  }, 8000);
+  });
 }
 
 function resetGame(){
@@ -994,19 +995,43 @@ function resetGame(){
   broadcastState();
 }
 
+// Web Worker ticker — fires even when the tab is backgrounded (browsers throttle setInterval in hidden tabs)
+let _tickWorker = null;
+let _tickFn = null;
+function ensureTickWorker(){
+  if(_tickWorker) return;
+  const code = `let h; self.onmessage = e => {
+    if(e.data === 'start'){ if(h) clearInterval(h); h = setInterval(()=>postMessage(0), 200); }
+    else if(e.data === 'stop'){ if(h){ clearInterval(h); h = null; } }
+  };`;
+  try {
+    _tickWorker = new Worker(URL.createObjectURL(new Blob([code], { type:'application/javascript' })));
+    _tickWorker.onmessage = ()=>{ if(_tickFn) try { _tickFn(); } catch(e){ console.error(e); } };
+  } catch(e){ console.error('Worker init failed, falling back to setInterval', e); }
+}
 function startTimer(onExpire){
-  stopTimer();
+  ensureTickWorker();
   let lastSec = -1;
-  timerHandle = setInterval(()=>{
+  _tickFn = ()=>{
     const left = Math.max(0, hostState.deadline - Date.now());
     if(left<=0){ stopTimer(); onExpire(); return; }
     const sec = Math.ceil(left/1000);
-    if(sec === lastSec) return; // skip render until the displayed second changes
+    if(sec === lastSec) return;
     lastSec = sec;
     if(role==='host') hostRender();
-  }, 250);
+  };
+  if(_tickWorker){ _tickWorker.postMessage('start'); }
+  else {
+    // Fallback to setInterval if Worker unavailable
+    if(timerHandle) clearInterval(timerHandle);
+    timerHandle = setInterval(()=>{ if(_tickFn) _tickFn(); }, 250);
+  }
 }
-function stopTimer(){ if(timerHandle){ clearInterval(timerHandle); timerHandle=null; } }
+function stopTimer(){
+  if(_tickWorker) _tickWorker.postMessage('stop');
+  if(timerHandle){ clearInterval(timerHandle); timerHandle = null; }
+  _tickFn = null;
+}
 
 // ---------------- Host UI ----------------
 function hostRender(){
