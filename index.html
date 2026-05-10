@@ -561,6 +561,7 @@ function ensureHostChannel(){
       const color = COLORS[Object.keys(hostState.players).length % COLORS.length];
       hostState.players[id] = { name: String(name||'').slice(0,20), score: 0, color };
       broadcastState();
+      maybeDevAutoStart();
     } else if(hostState.players[id].name !== name){
       hostState.players[id].name = String(name||'').slice(0,20);
       broadcastState();
@@ -631,6 +632,17 @@ function startGame(){
   startRound();
 }
 
+function maybeDevAutoStart(){
+  if(!route.dev) return;
+  if(hostState.phase !== 'lobby') return;
+  if(hostState.autoStartScheduled) return;
+  if(Object.keys(hostState.players).length < 3) return;
+  hostState.autoStartScheduled = true;
+  hostState.autoStartAt = Date.now() + 2500;
+  broadcastState();
+  setTimeout(()=>{ if(hostState.phase==='lobby') startGame(); }, 2500);
+}
+
 function addBot(){
   const total = Object.keys(hostState.players).length;
   if(total >= 8){ toast('Room full'); return; }
@@ -641,6 +653,7 @@ function addBot(){
   const color = COLORS[total % COLORS.length];
   hostState.players[id] = { name, score: 0, color, isBot: true };
   broadcastState();
+  maybeDevAutoStart();
 }
 
 function scheduleBotAnswers(){
@@ -997,7 +1010,7 @@ function sendHello(){
 }
 
 function playerSig(s, myP){
-  const base = `${s.phase}|${s.round}|${s.voteIdx}|${Object.keys(s.players).length}|${myP?.score||0}`;
+  const base = `${s.phase}|${s.round}|${s.voteIdx}|${Object.keys(s.players).length}|${myP?.score||0}|${s.autoStartScheduled?1:0}`;
   if(s.phase==='answering'){
     const mine = s.prompts.filter(p => p.a.includes(me.id));
     return base + '|' + mine.map(p => p.id).join(',');
@@ -1073,9 +1086,10 @@ function playerRender(){
 
 function renderPlayerLobby(){
   const others = Object.entries(viewState.players);
+  const autoStart = viewState.autoStartScheduled;
   return `
     <h1 style="text-align:center">You're in!</h1>
-    <div class="sub" style="text-align:center">Room <strong>${roomCode}</strong> · waiting for host to start</div>
+    <div class="sub" style="text-align:center">Room <strong>${roomCode}</strong> · ${autoStart?'<span style="color:var(--green);font-weight:800">starting in a moment…</span>':'waiting for host to start'}</div>
     <div style="height:var(--s4)"></div>
     <div class="players">
       ${others.map(([id,p])=>`<div class="player-card${id===me.id?' fresh':''}"><span class="dot" style="background:${p.color}"></span>${escapeHtml(p.name)}${id===me.id?' (you)':''}</div>`).join('')}
