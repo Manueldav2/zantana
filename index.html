@@ -288,6 +288,49 @@
   .shake{animation:shake .35s}
   @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 
+  /* Character avatars */
+  .avatar{flex-shrink:0;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));display:inline-block}
+  .avatar-wrap{display:inline-flex;flex-direction:column;align-items:center;gap:6px}
+  .avatar-name{font-family:var(--display);font-weight:900;letter-spacing:-.01em;font-size:16px;background:#0a0e1a;color:#fff;padding:4px 12px;border-radius:999px;border:2px solid #fff;text-shadow:none}
+
+  /* Active toggle button (for settings) */
+  .btn.alt.active{background:var(--orange);color:var(--accent-ink);box-shadow:0 4px 0 0 color-mix(in srgb, var(--orange) 60%, #000), var(--sh-sm)}
+
+  /* Fill-in-the-blank */
+  .blank-ph{
+    display:inline-block;min-width:90px;
+    border-bottom:4px solid var(--orange);
+    margin:0 .15em .05em;height:.55em;vertical-align:baseline;
+    background:linear-gradient(180deg, transparent 0%, rgba(255,146,51,.12) 100%);
+    border-radius:3px 3px 0 0;
+  }
+  .blank-filled{
+    background:rgba(255,146,51,.18);border-radius:6px;
+    padding:.02em .35em;font-weight:900;color:var(--orange);
+    border-bottom:3px solid var(--orange);
+  }
+
+  /* AI panel */
+  .ai-panel{
+    margin-top:var(--s3);padding:var(--s4);
+    border:2px dashed rgba(255,146,51,.35);border-radius:var(--r-md);
+    background:rgba(255,146,51,.04);
+  }
+  .ai-panel summary{
+    cursor:pointer;font-weight:800;font-size:14px;
+    list-style:none;display:flex;align-items:center;gap:.5em;color:var(--orange);
+  }
+  .ai-panel summary::-webkit-details-marker{ display:none }
+  .ai-panel summary::before{
+    content:'+';display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;background:var(--orange);color:#1a0e00;
+    border-radius:50%;font-weight:900;font-size:16px;line-height:1;
+  }
+  .ai-panel[open] summary::before{ content:'−' }
+  .ai-status{margin-top:var(--s3);font-weight:700;font-size:13px;color:var(--ink-dim);min-height:1.2em}
+  .ai-status.ok{color:var(--green)}
+  .ai-status.err{color:var(--red)}
+
   /* Responsive */
   @media (max-width:780px){
     .answers{grid-template-columns:1fr}
@@ -352,73 +395,132 @@ const BOT_ANSWERS = [
 ];
 
 const PROMPTS = [
-  "A bad name for a new perfume",
-  "The worst thing to find in your sock drawer",
-  "An item that should never be sold at a yard sale",
-  "The worst superpower to have at a job interview",
-  "A terrible name for a cruise ship",
-  "Something you should never microwave",
-  "An invention nobody asked for",
-  "The worst gift to give your boss",
-  "A bad slogan for a funeral home",
-  "Something you'd find in a clown's wallet",
-  "A surprising thing to find in a wedding cake",
-  "The worst song to play at a funeral",
-  "A weird thing to whisper into someone's ear at a job interview",
-  "The most useless smartphone app you could invent",
-  "Something a dog would say if it could talk",
-  "A new event for the Olympics that nobody asked for",
-  "An awful name for a newborn baby",
-  "A terrible motto to live by",
-  "The worst thing to shout in a crowded elevator",
-  "An odd reason to be late to work",
-  "A bad name for a children's book character",
-  "Something you should never bring to a job interview",
-  "A weird thing to be afraid of",
-  "An unusual hobby for the Queen of England",
-  "Something Batman would never say",
-  "A weird fortune cookie message",
-  "The worst nickname for your grandma",
-  "A surprising thing to find inside a piñata",
-  "An awful name for a yoga pose",
-  "Something you'd never see on a billboard",
-  "A bad title for a self-help book",
-  "The most disappointing thing to find under your Christmas tree",
-  "A strange use for a rubber duck",
-  "An odd thing to be addicted to",
-  "A bad name for a perfume that smells like fish",
-  "Something a robot would say on a first date",
-  "An unusual ingredient in grandma's cookies",
-  "A bad excuse for missing your own wedding",
-  "Something you'd find in Santa's diary",
-  "An awful theme for a kid's birthday party",
-  "A weird thing to find in a hotel minibar",
-  "The worst tattoo to get on your forehead",
-  "Something you'd never want to hear from your dentist",
-  "An odd ingredient for a smoothie",
-  "A bad name for a horse race",
-  "Something a cat would tweet",
-  "A strange new flavor of toothpaste",
-  "An awful theme song for your life",
-  "The worst thing to say to a police officer",
-  "An unusual reason to call 911",
-  "A bad pickup line",
-  "A weird thing to keep in your fridge",
-  "The worst Halloween costume for a toddler",
-  "An unfortunate name for a restaurant",
-  "Something an alien would buy at the gas station",
-  "A bad name for a heavy metal band",
-  "The worst thing to find in your soup",
-  "An awful theme park ride",
-  "A weird item to bring to a desert island",
-  "The strangest thing to use as currency",
-  "A horrible motivational poster slogan",
-  "An odd Olympic sport for cats",
-  "The worst name for a new dating app",
-  "Something you'd find in a vampire's lunchbox",
-  "An odd thing to be famous for",
-  "The worst thing to say at your own funeral"
+  "A bad name for a new perfume: ___",
+  "Found in my sock drawer: ___",
+  "Do not sell this at a yard sale: ___",
+  "Worst superpower to have at a job interview: ___",
+  "A terrible name for a cruise ship: ___",
+  "Never put this in the microwave: ___",
+  "An invention nobody asked for: ___",
+  "The worst gift to give your boss: ___",
+  "A bad slogan for a funeral home: ___",
+  "What's in a clown's wallet: ___",
+  "Surprising thing to find inside a wedding cake: ___",
+  "Worst song to play at a funeral: ___",
+  "What you should never whisper in a job interview: ___",
+  "The most useless app ever invented: ___",
+  "If dogs could talk, they would say: ___",
+  "A new Olympic event nobody asked for: ___",
+  "An awful name for a newborn: ___",
+  "A terrible motto to live by: ___",
+  "Do not shout this in a crowded elevator: ___",
+  "An unbelievable reason for being late to work: ___",
+  "Worst name for a children's book character: ___",
+  "Do not bring this to a job interview: ___",
+  "A weird thing to be afraid of: ___",
+  "An unusual hobby for the King of England: ___",
+  "Something Batman would never say: ___",
+  "A weird fortune cookie message: ___",
+  "The worst nickname for your grandma: ___",
+  "Surprising thing to find inside a piñata: ___",
+  "An awful name for a yoga pose: ___",
+  "Something you'd never see on a billboard: ___",
+  "A bad title for a self-help book: ___",
+  "Most disappointing thing under the Christmas tree: ___",
+  "A strange use for a rubber duck: ___",
+  "An odd thing to be addicted to: ___",
+  "A perfume that smells like fish would be called: ___",
+  "A robot's opening line on a first date: ___",
+  "Grandma's secret cookie ingredient: ___",
+  "A bad excuse for missing your own wedding: ___",
+  "What's in Santa's diary: ___",
+  "An awful theme for a kid's birthday party: ___",
+  "A weird thing to find in a hotel minibar: ___",
+  "The worst tattoo to get on your forehead: ___",
+  "Do not let your dentist say this to you: ___",
+  "An odd ingredient for a smoothie: ___",
+  "Worst name for a horse race: ___",
+  "If cats could tweet, one would post: ___",
+  "A strange new flavor of toothpaste: ___",
+  "An awful theme song for your life: ___",
+  "What not to say to a police officer: ___",
+  "An unusual reason to call 911: ___",
+  "A pickup line that should not exist: ___",
+  "A weird thing to keep in your fridge: ___",
+  "Worst Halloween costume for a toddler: ___",
+  "An unfortunate name for a restaurant: ___",
+  "An alien's gas station purchase: ___",
+  "A bad name for a heavy metal band: ___",
+  "The worst thing to find in your soup: ___",
+  "An awful theme park ride: ___",
+  "A weird item to bring to a desert island: ___",
+  "The strangest thing to use as currency: ___",
+  "A horrible motivational poster slogan: ___",
+  "An Olympic sport for cats would be: ___",
+  "The worst name for a new dating app: ___",
+  "What's in a vampire's lunchbox: ___",
+  "An odd thing to be famous for: ___",
+  "Your eulogy will mention: ___",
+  "Wikipedia's entry for me ends with: ___",
+  "Reasons my therapist quit: ___",
+  "If I had a million dollars I'd waste it on: ___",
+  "A movie that should not be made into a musical: ___",
+  "Banned at the family BBQ for: ___",
+  "Three words on my passport: ___",
+  "Worst Spotify Wrapped category: ___",
+  "Group chat name with the worst vibes: ___",
+  "The wifi password at the gates of hell: ___",
+  "The villain's monologue ends with: ___",
+  "If Shrek had a podcast it would be called: ___",
+  "What ChatGPT secretly thinks about you: ___",
+  "The reason Sephora banned me: ___",
+  "Last thing I said before getting kicked off a plane: ___",
+  "What the FBI agent watching me wrote in his report: ___",
+  "An autocorrect that ended a relationship: ___",
+  "My LinkedIn 'About' section just says: ___",
+  "What I yell during karaoke: ___",
+  "Subway sandwich that should not exist: ___",
+  "The Bachelor's worst opening line: ___",
+  "A flag for a country I'd invent: ___",
+  "What I'd put on my tombstone: ___",
+  "The reason I'm trending on Twitter: ___"
 ];
+
+// Character avatars (Quiplash-style blob faces)
+const AVATAR_VARIANTS = [
+  { eyes:'<circle cx="38" cy="48" r="6" fill="#0a0e1a"/><circle cx="62" cy="48" r="6" fill="#0a0e1a"/>',
+    mouth:'<path d="M34 68 Q50 84 66 68" stroke="#0a0e1a" stroke-width="5" fill="none" stroke-linecap="round"/>' },
+  { eyes:'<circle cx="38" cy="48" r="8" fill="#fff" stroke="#0a0e1a" stroke-width="3"/><circle cx="62" cy="48" r="8" fill="#fff" stroke="#0a0e1a" stroke-width="3"/><circle cx="38" cy="48" r="3" fill="#0a0e1a"/><circle cx="62" cy="48" r="3" fill="#0a0e1a"/>',
+    mouth:'<circle cx="50" cy="74" r="7" fill="#0a0e1a"/>' },
+  { eyes:'<path d="M28 48 L48 48" stroke="#0a0e1a" stroke-width="5" stroke-linecap="round"/><path d="M52 48 L72 48" stroke="#0a0e1a" stroke-width="5" stroke-linecap="round"/>',
+    mouth:'<path d="M38 70 Q52 78 64 68" stroke="#0a0e1a" stroke-width="5" fill="none" stroke-linecap="round"/>' },
+  { eyes:'<circle cx="38" cy="48" r="6" fill="#0a0e1a"/><circle cx="62" cy="48" r="6" fill="#0a0e1a"/>',
+    mouth:'<path d="M34 66 Q50 82 66 66 L60 86 Q50 90 40 86 Z" stroke="#0a0e1a" stroke-width="3" fill="#FF3355" stroke-linejoin="round"/>' },
+  { eyes:'<rect x="26" y="42" width="22" height="11" rx="3" fill="#0a0e1a"/><rect x="52" y="42" width="22" height="11" rx="3" fill="#0a0e1a"/><rect x="46" y="46" width="8" height="3" fill="#0a0e1a"/>',
+    mouth:'<path d="M38 72 Q50 78 62 72" stroke="#0a0e1a" stroke-width="5" fill="none" stroke-linecap="round"/>' },
+  { eyes:'<path d="M28 42 L46 50" stroke="#0a0e1a" stroke-width="4" stroke-linecap="round"/><path d="M72 42 L54 50" stroke="#0a0e1a" stroke-width="4" stroke-linecap="round"/><circle cx="38" cy="50" r="4" fill="#0a0e1a"/><circle cx="62" cy="50" r="4" fill="#0a0e1a"/>',
+    mouth:'<path d="M38 78 Q50 70 62 78" stroke="#0a0e1a" stroke-width="5" fill="none" stroke-linecap="round"/>' },
+  { eyes:'<circle cx="38" cy="48" r="6" fill="#0a0e1a"/><path d="M54 50 Q62 42 70 50" stroke="#0a0e1a" stroke-width="5" fill="none" stroke-linecap="round"/>',
+    mouth:'<path d="M36 70 Q50 82 64 70" stroke="#0a0e1a" stroke-width="5" fill="none" stroke-linecap="round"/>' },
+  { eyes:'<path d="M30 42 L46 56 M46 42 L30 56" stroke="#0a0e1a" stroke-width="4" stroke-linecap="round"/><path d="M54 42 L70 56 M70 42 L54 56" stroke="#0a0e1a" stroke-width="4" stroke-linecap="round"/>',
+    mouth:'<path d="M40 74 L60 74" stroke="#0a0e1a" stroke-width="5" stroke-linecap="round"/>' },
+];
+
+function hashStr(s){
+  let h = 0;
+  for(let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function avatarSVG(color, seedId, size=56){
+  const v = hashStr(String(seedId||'x')) % AVATAR_VARIANTS.length;
+  const a = AVATAR_VARIANTS[v];
+  return `<svg class="avatar" viewBox="0 0 100 110" width="${size}" height="${Math.round(size*1.1)}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M50 6 C18 6 6 32 6 58 C6 92 26 104 50 104 C74 104 94 92 94 58 C94 32 82 6 50 6 Z" fill="${color}" stroke="#0a0e1a" stroke-width="4"/>
+    ${a.eyes}
+    ${a.mouth}
+  </svg>`;
+}
 
 // SVG icons (no emoji)
 const ICONS = {
@@ -545,10 +647,22 @@ function renderHost(){
   hostRender();
 }
 
+function loadSettings(){
+  try {
+    const raw = localStorage.getItem('zantana_settings');
+    if(raw){ const s = JSON.parse(raw); return { rounds:s.rounds||3, answerSec:s.answerSec||120, voteSec:s.voteSec||30 }; }
+  } catch{}
+  return { rounds: 3, answerSec: 120, voteSec: 30 };
+}
+function saveSettings(s){ localStorage.setItem('zantana_settings', JSON.stringify(s)); }
+
 function initHostState(){
+  const settings = loadSettings();
   hostState = {
-    phase: 'lobby', round: 0, totalRounds: 3,
+    phase: 'lobby', round: 0, totalRounds: settings.rounds,
+    settings,
     players: {}, prompts: [], voteIdx: 0, deadline: 0,
+    customPrompts: null,
   };
 }
 
@@ -612,7 +726,8 @@ function pairPrompts(){
   if(ids.length<3) return [];
   const n = ids.length;
   const shuffled = [...ids].sort(()=>Math.random()-0.5);
-  const promptsPool = [...PROMPTS].sort(()=>Math.random()-0.5);
+  const base = (hostState.customPrompts && hostState.customPrompts.length >= 3) ? hostState.customPrompts : PROMPTS;
+  const promptsPool = [...base].sort(()=>Math.random()-0.5);
   const result = [];
   for(let i=0;i<n;i++){
     const a = shuffled[i];
@@ -630,6 +745,62 @@ function startGame(){
   if(Object.keys(hostState.players).length<3){ toast('Need at least 3 players'); return; }
   hostState.round = 1;
   startRound();
+}
+
+async function generatePromptsAI(context, apiKey){
+  const prompt = `You are generating fill-in-the-blank prompts for a Quiplash-style party game played by a specific group of friends. Use the context below to make funny, edgy prompts that reference the friends and their inside jokes.
+
+CONTEXT ABOUT THE GROUP:
+---
+${context}
+---
+
+Generate exactly 20 fill-in-the-blank prompts. Rules:
+1. Each prompt MUST contain exactly one blank, written as "___" (three underscores).
+2. 5-15 words per prompt.
+3. Reference specific people, events, or inside jokes from the context when natural.
+4. Edgy, playful, pop-culture-aware, party-game energy.
+5. Vary the format: setups, scenarios, "what would X do", "X's tinder bio", "the reason X did Y", etc.
+6. Avoid slurs, content sexualizing minors, doxxing info, calls to real-world violence.
+
+Return ONLY a JSON array of 20 strings. No markdown, no commentary.
+
+Example format (substitute your own people/jokes):
+["Sophie's hidden talent: ___", "Reason ___ got banned from Costco", "What Marcus would do at his own funeral: ___", "The Sephora cashier called ___ because: ___"]
+Wait — the last one has two blanks, not allowed. Single blank per prompt.
+
+Try again:
+["Sophie's hidden talent: ___", "Reason ___ got banned from Costco", "What Marcus would do at his own funeral: ___", "Jess's tinder bio just says: ___"]`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const body = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 1.0,
+      responseMimeType: 'application/json',
+      responseSchema: { type: 'array', items: { type: 'string' } }
+    },
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' }
+    ]
+  };
+  const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if(!res.ok){
+    const err = await res.text();
+    throw new Error('Gemini ' + res.status + ' — ' + err.slice(0,200));
+  }
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  let parsed;
+  try { parsed = JSON.parse(text); }
+  catch(e){
+    const m = text.match(/\[[\s\S]*\]/); if(m) parsed = JSON.parse(m[0]); else throw new Error('AI returned non-JSON');
+  }
+  if(!Array.isArray(parsed)) throw new Error('AI response not an array');
+  return parsed.map(s=>String(s||'').trim()).filter(s=>s.length>=4).slice(0,30);
 }
 
 function maybeDevAutoStart(){
@@ -699,7 +870,7 @@ function startRound(){
   hostState.phase = 'answering';
   hostState.prompts = pairPrompts();
   hostState.voteIdx = 0;
-  hostState.deadline = Date.now() + 75000;
+  hostState.deadline = Date.now() + (hostState.settings.answerSec*1000);
   broadcastState();
   scheduleBotAnswers();
   startTimer(()=>{ fillMissingAnswers(); startVoting(); });
@@ -717,7 +888,7 @@ function startVoting(){
   stopTimer();
   hostState.phase = 'voting';
   hostState.voteIdx = 0;
-  hostState.deadline = Date.now() + 20000;
+  hostState.deadline = Date.now() + (hostState.settings.voteSec*1000);
   broadcastState();
   scheduleBotVotes();
   startTimer(()=>advanceVote(false));
@@ -740,7 +911,7 @@ function advanceVote(everyoneVoted){
     if(hostState.voteIdx < hostState.prompts.length-1){
       hostState.voteIdx++;
       hostState.phase = 'voting';
-      hostState.deadline = Date.now() + 20000;
+      hostState.deadline = Date.now() + (hostState.settings.voteSec*1000);
       broadcastState();
       scheduleBotVotes();
       startTimer(()=>advanceVote(false));
@@ -774,9 +945,13 @@ function resetGame(){
 
 function startTimer(onExpire){
   stopTimer();
+  let lastSec = -1;
   timerHandle = setInterval(()=>{
     const left = Math.max(0, hostState.deadline - Date.now());
     if(left<=0){ stopTimer(); onExpire(); return; }
+    const sec = Math.ceil(left/1000);
+    if(sec === lastSec) return; // skip render until the displayed second changes
+    lastSec = sec;
     if(role==='host') hostRender();
   }, 250);
 }
@@ -821,6 +996,58 @@ function hostRender(){
       try { await navigator.clipboard.writeText(url); cpy.textContent='Copied ✓'; setTimeout(()=>cpy.textContent='Copy link', 1600); }
       catch{ toast('Copy failed — long-press the link'); }
     };
+    // Settings buttons
+    document.querySelectorAll('[data-setting]').forEach(grp=>{
+      const key = grp.dataset.setting;
+      grp.querySelectorAll('[data-val]').forEach(b=>{
+        b.onclick = ()=>{
+          const val = parseInt(b.dataset.val);
+          hostState.settings[key] = val;
+          if(key==='rounds') hostState.totalRounds = val;
+          saveSettings(hostState.settings);
+          broadcastState();
+        };
+      });
+    });
+    // Use custom prompts
+    const useBtn = document.getElementById('usePromptsBtn');
+    if(useBtn) useBtn.onclick = ()=>{
+      const ta = document.getElementById('customPrompts');
+      const text = ta.value;
+      const lines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>=4);
+      if(lines.length < 3){ toast('Need at least 3 prompts (one per line)'); return; }
+      hostState.customPromptsText = text;
+      hostState.customPrompts = lines;
+      toast(`Loaded ${lines.length} custom prompts`);
+      broadcastState();
+    };
+    // AI generate
+    const genBtn = document.getElementById('genBtn');
+    if(genBtn){
+      const savedKey = localStorage.getItem('zantana_gemini_key');
+      if(savedKey){ const ki = document.getElementById('keyInput'); if(ki && !ki.value) ki.value = savedKey; }
+      genBtn.onclick = async ()=>{
+        const ctx = (document.getElementById('ctxInput').value||'').trim();
+        const key = (document.getElementById('keyInput').value||'').trim();
+        const status = document.getElementById('genStatus');
+        if(!ctx){ status.className='ai-status err'; status.textContent='Paste some context first.'; return; }
+        if(!key){ status.className='ai-status err'; status.textContent='Need a Gemini API key (free at aistudio.google.com/apikey).'; return; }
+        localStorage.setItem('zantana_gemini_key', key);
+        status.className='ai-status'; status.textContent='Generating prompts… can take 10–20s';
+        genBtn.disabled = true;
+        try {
+          const prompts = await generatePromptsAI(ctx, key);
+          if(!Array.isArray(prompts) || prompts.length < 5) throw new Error('Got too few prompts back');
+          hostState.customPrompts = prompts;
+          hostState.customPromptsText = prompts.join('\n');
+          const ta = document.getElementById('customPrompts'); if(ta) ta.value = prompts.join('\n');
+          status.className='ai-status ok'; status.textContent='✓ Got '+prompts.length+' prompts. Click Start Game.';
+          broadcastState();
+        } catch(e){
+          status.className='ai-status err'; status.textContent='Error: '+e.message;
+        } finally { genBtn.disabled = false; }
+      };
+    }
   }
   if(s.phase==='final'){
     const ag = document.getElementById('againBtn');
@@ -833,6 +1060,9 @@ function renderHostLobby(){
   const joinUrl = location.origin + location.pathname + '#p/' + roomCode;
   const shortUrl = joinUrl.replace(/^https?:\/\//,'');
   const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=' + encodeURIComponent(joinUrl);
+  const st = hostState.settings;
+  const customLines = hostState.customPromptsText || '';
+  const customCount = hostState.customPrompts ? hostState.customPrompts.length : 0;
   return `
     <div class="lobby-grid">
       <div class="code-stack">
@@ -852,9 +1082,12 @@ function renderHostLobby(){
         <h2 style="margin-bottom:var(--s4)">Players ${players.length>=3?'<span style="color:var(--green)">· ready</span>':''}</h2>
         ${players.length===0
           ? `<div class="empty-state">Waiting for friends to jump in…</div>`
-          : `<div class="grid" style="grid-template-columns:1fr 1fr;gap:var(--s3)">
+          : `<div style="display:flex;flex-wrap:wrap;gap:var(--s5);justify-content:flex-start;align-items:flex-end">
               ${players.map(([id,p])=>`
-                <div class="player-card"><span class="dot" style="background:${p.color}"></span>${escapeHtml(p.name)}${p.isBot?' <span style="font-size:11px;color:var(--ink-muted);font-weight:700;margin-left:auto">BOT</span>':''}</div>
+                <div class="avatar-wrap">
+                  ${avatarSVG(p.color, id, 64)}
+                  <span class="avatar-name">${escapeHtml(p.name)}${p.isBot?' <span style="opacity:.55;font-size:10px">BOT</span>':''}</span>
+                </div>
               `).join('')}
             </div>`
         }
@@ -862,7 +1095,50 @@ function renderHostLobby(){
         <button class="btn lg orange" id="startBtn" style="width:100%">${ICONS.play}<span>Start Game</span></button>
         <div style="height:var(--s3)"></div>
         <button class="btn alt" id="botBtn" style="width:100%;font-size:14px;padding:12px;min-height:0">+ Add test bot (play solo)</button>
-        <div class="help">3+ players to start · 3 rounds · add bots to play alone</div>
+        <div class="help">3+ players to start · fill-in-the-blank Quiplash style · add bots to play alone</div>
+
+        <details class="ai-panel">
+          <summary>Game settings</summary>
+          <div style="height:var(--s3)"></div>
+          <div style="font-size:13px;font-weight:800;color:var(--ink-dim);margin-bottom:6px">Rounds</div>
+          <div class="row" data-setting="rounds" style="gap:6px">
+            ${[1,2,3,4,5].map(n=>`<button class="btn alt ${st.rounds===n?'active':''}" data-val="${n}" style="flex:1;min-height:0;padding:10px;font-size:14px">${n}</button>`).join('')}
+          </div>
+          <div style="height:var(--s4)"></div>
+          <div style="font-size:13px;font-weight:800;color:var(--ink-dim);margin-bottom:6px">Time to answer</div>
+          <div class="row" data-setting="answerSec" style="gap:6px">
+            ${[60,90,120,180].map(n=>`<button class="btn alt ${st.answerSec===n?'active':''}" data-val="${n}" style="flex:1;min-height:0;padding:10px;font-size:14px">${n}s</button>`).join('')}
+          </div>
+          <div style="height:var(--s4)"></div>
+          <div style="font-size:13px;font-weight:800;color:var(--ink-dim);margin-bottom:6px">Time to vote</div>
+          <div class="row" data-setting="voteSec" style="gap:6px">
+            ${[20,30,45,60].map(n=>`<button class="btn alt ${st.voteSec===n?'active':''}" data-val="${n}" style="flex:1;min-height:0;padding:10px;font-size:14px">${n}s</button>`).join('')}
+          </div>
+        </details>
+
+        <details class="ai-panel" ${customCount>0?'open':''}>
+          <summary>Custom prompts ${customCount>0?`<span style="color:var(--green)">· ${customCount} loaded</span>`:''}</summary>
+          <div style="height:var(--s3)"></div>
+          <div class="sub" style="font-size:13px">One per line. Use <code style="background:rgba(255,255,255,.08);padding:.1em .35em;border-radius:4px">___</code> for the fill-in blank. Leave empty to use built-in prompts.</div>
+          <div style="height:var(--s3)"></div>
+          <textarea id="customPrompts" rows="6" placeholder="Sophie's tinder bio: ___&#10;The reason ___ got banned from Costco&#10;What ___ would do at their own funeral: ___">${escapeHtml(customLines)}</textarea>
+          <div style="height:var(--s3)"></div>
+          <button class="btn alt orange" id="usePromptsBtn" style="width:100%;min-height:0;padding:12px;font-size:14px">Use these prompts</button>
+
+          <div style="height:var(--s4)"></div>
+          <details>
+            <summary style="font-size:13px;color:var(--ink-muted);cursor:pointer;font-weight:800">Or auto-generate from group context (AI) →</summary>
+            <div style="height:var(--s3)"></div>
+            <div class="sub" style="font-size:12px">Paste anything about your friend group — chat exports, descriptions, inside jokes. AI generates 20 prompts about them.</div>
+            <div style="height:var(--s2)"></div>
+            <textarea id="ctxInput" rows="5" placeholder="Sophie always shows up 40 min late. Marcus is obsessed with Marvel. Jess won't stop talking about her Pilates instructor..."></textarea>
+            <div style="height:var(--s3)"></div>
+            <input id="keyInput" type="password" placeholder="Gemini API key — free at aistudio.google.com/apikey">
+            <div style="height:var(--s3)"></div>
+            <button class="btn orange" id="genBtn" style="width:100%;min-height:0;padding:12px;font-size:14px">Generate Prompts with AI</button>
+            <div id="genStatus" class="ai-status"></div>
+          </details>
+        </details>
       </div>
     </div>
   `;
@@ -902,18 +1178,21 @@ function renderHostVoting(reveal){
   for(const v of Object.values(p.votes)) counts[v]++;
   const total = counts.a + counts.b || 1;
   const aPct = counts.a/total*100, bPct = counts.b/total*100;
+  const hasBlank = /_{3,}/.test(p.text);
+  const aFilled = renderFilled(p.text, p.ans[aId], aP.color);
+  const bFilled = renderFilled(p.text, p.ans[bId], bP.color);
   return `
-    <div class="prompt-big">"${escapeHtml(p.text)}"</div>
+    ${hasBlank ? '' : `<div class="prompt-big">"${escapeHtml(p.text)}"</div>`}
     <div class="answers">
       <div class="answer-card" style="border-color:${aP.color}">
-        <div>${escapeHtml(p.ans[aId])}</div>
+        <div>${aFilled || escapeHtml(p.ans[aId])}</div>
         <div>
           ${reveal ? `<div class="author" style="color:${aP.color}">${escapeHtml(aP.name)} · ${counts.a} vote${counts.a===1?'':'s'}</div>
             <div class="vote-bar"><div style="width:${aPct}%;background:${aP.color}"></div></div>` : ''}
         </div>
       </div>
       <div class="answer-card" style="border-color:${bP.color}">
-        <div>${escapeHtml(p.ans[bId])}</div>
+        <div>${bFilled || escapeHtml(p.ans[bId])}</div>
         <div>
           ${reveal ? `<div class="author" style="color:${bP.color}">${escapeHtml(bP.name)} · ${counts.b} vote${counts.b===1?'':'s'}</div>
             <div class="vote-bar"><div style="width:${bPct}%;background:${bP.color}"></div></div>` : ''}
@@ -1091,8 +1370,13 @@ function renderPlayerLobby(){
     <h1 style="text-align:center">You're in!</h1>
     <div class="sub" style="text-align:center">Room <strong>${roomCode}</strong> · ${autoStart?'<span style="color:var(--green);font-weight:800">starting in a moment…</span>':'waiting for host to start'}</div>
     <div style="height:var(--s4)"></div>
-    <div class="players">
-      ${others.map(([id,p])=>`<div class="player-card${id===me.id?' fresh':''}"><span class="dot" style="background:${p.color}"></span>${escapeHtml(p.name)}${id===me.id?' (you)':''}</div>`).join('')}
+    <div style="display:flex;flex-wrap:wrap;gap:var(--s4);justify-content:center;align-items:flex-end">
+      ${others.map(([id,p])=>`
+        <div class="avatar-wrap${id===me.id?' fresh':''}">
+          ${avatarSVG(p.color, id, 56)}
+          <span class="avatar-name">${escapeHtml(p.name)}${id===me.id?' (you)':''}</span>
+        </div>
+      `).join('')}
     </div>
   `;
 }
@@ -1100,18 +1384,36 @@ function renderPlayerLobby(){
 function renderPlayerAnswering(){
   const mine = viewState.prompts.filter(p => p.a.includes(me.id));
   if(mine.length===0) return `<div class="empty-state">You're not in this round somehow. Sit tight.</div>`;
-  return mine.map((p,i)=>{
-    const done = !!(p.ans[me.id]||'').trim();
-    return `
-      <div class="prompt-box">
-        <div class="sub" style="margin-bottom:var(--s2);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:13px;color:var(--orange)">Prompt ${i+1} of ${mine.length}</div>
-        <div style="font-family:var(--display);font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.2;margin-bottom:var(--s4)">"${escapeHtml(p.text)}"</div>
-        <textarea data-pid="${p.id}" rows="2" maxlength="140" placeholder="The funniest answer wins…" ${done?'disabled':''}>${escapeHtml(p.ans[me.id]||'')}</textarea>
-        <div style="height:var(--s3)"></div>
-        <button class="btn submit-ans ${done?'green':''}" data-pid="${p.id}" ${done?'disabled':''} style="width:100%">${done?'Submitted ✓':'Submit'}</button>
-      </div>
-    `;
-  }).join('<div style="height:var(--s3)"></div>');
+  const remaining = mine.filter(p => !(p.ans[me.id]||'').trim());
+  if(remaining.length===0){
+    return `<div class="prompt-box" style="text-align:center">
+      <div class="display" style="font-size:48px;color:var(--green)">✓</div>
+      <h2 style="margin-top:var(--s3)">All in</h2>
+      <div class="sub" style="margin-top:var(--s2)">Waiting on the others…</div>
+    </div>`;
+  }
+  const p = remaining[0];
+  const idx = mine.length - remaining.length + 1;
+  return `
+    <div class="prompt-box">
+      <div class="sub" style="margin-bottom:var(--s2);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:13px;color:var(--orange)">Prompt ${idx} of ${mine.length}</div>
+      <div style="font-family:var(--display);font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.2;margin-bottom:var(--s4)">${renderPromptText(p.text)}</div>
+      <textarea data-pid="${p.id}" rows="2" maxlength="140" placeholder="The funniest answer wins…" autofocus></textarea>
+      <div style="height:var(--s3)"></div>
+      <button class="btn submit-ans" data-pid="${p.id}" style="width:100%">Submit</button>
+    </div>
+  `;
+}
+
+function renderPromptText(text){
+  return escapeHtml(text).replace(/_{3,}/g, '<span class="blank-ph"></span>');
+}
+function renderFilled(text, answer, color){
+  if(/_{3,}/.test(text)){
+    const safeAns = escapeHtml(answer);
+    return escapeHtml(text).replace(/_{3,}/, `<span class="blank-filled" style="color:${color};border-color:${color};background:color-mix(in srgb, ${color} 22%, transparent)">${safeAns}</span>`);
+  }
+  return null; // caller falls back to plain answer display
 }
 
 function renderPlayerVoting(){
@@ -1121,7 +1423,7 @@ function renderPlayerVoting(){
     return `
       <div class="prompt-box">
         <div class="sub" style="margin-bottom:var(--s2);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:13px;color:var(--green)">This one's yours</div>
-        <div style="font-family:var(--display);font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.2">"${escapeHtml(p.text)}"</div>
+        <div style="font-family:var(--display);font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.2">${renderPromptText(p.text)}</div>
         <div class="sub" style="text-align:center;margin-top:var(--s5)">Sit back. Watch them suffer.</div>
       </div>
     `;
@@ -1129,15 +1431,18 @@ function renderPlayerVoting(){
   const myVote = p.votes[me.id];
   const [aId,bId] = p.a;
   const aP = viewState.players[aId], bP = viewState.players[bId];
+  const hasBlank = /_{3,}/.test(p.text);
+  const aFilled = renderFilled(p.text, p.ans[aId]||'?', aP.color);
+  const bFilled = renderFilled(p.text, p.ans[bId]||'?', bP.color);
   return `
     <div class="sub" style="text-align:center;font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--ink-muted)">Vote · ${viewState.voteIdx+1} of ${viewState.prompts.length}</div>
-    <div style="font-family:var(--display);font-weight:800;font-size:clamp(22px,5vw,30px);line-height:1.15;text-align:center;padding:var(--s3) 0">"${escapeHtml(p.text)}"</div>
+    ${hasBlank ? '' : `<div style="font-family:var(--display);font-weight:800;font-size:clamp(22px,5vw,30px);line-height:1.15;text-align:center;padding:var(--s3) 0">"${escapeHtml(p.text)}"</div>`}
     <button class="answer-card vote-btn ${myVote==='a'?'voted':''}" data-choice="a" data-pid="${p.id}" style="border-color:${aP.color}">
-      <div>${escapeHtml(p.ans[aId]||'(no answer)')}</div>
+      <div>${aFilled || escapeHtml(p.ans[aId]||'(no answer)')}</div>
     </button>
     <div class="versus">VS</div>
     <button class="answer-card vote-btn ${myVote==='b'?'voted':''}" data-choice="b" data-pid="${p.id}" style="border-color:${bP.color}">
-      <div>${escapeHtml(p.ans[bId]||'(no answer)')}</div>
+      <div>${bFilled || escapeHtml(p.ans[bId]||'(no answer)')}</div>
     </button>
     ${myVote?`<div class="sub" style="text-align:center;color:var(--green);font-weight:800">Vote locked.</div>`:''}
   `;
@@ -1151,16 +1456,19 @@ function renderPlayerReveal(){
   const total = counts.a + counts.b || 1;
   const [aId,bId] = p.a;
   const aP = viewState.players[aId], bP = viewState.players[bId];
+  const hasBlank = /_{3,}/.test(p.text);
+  const aFilled = renderFilled(p.text, p.ans[aId]||'?', aP.color);
+  const bFilled = renderFilled(p.text, p.ans[bId]||'?', bP.color);
   return `
-    <div style="font-family:var(--display);font-weight:800;font-size:clamp(20px,5vw,28px);line-height:1.15;text-align:center">"${escapeHtml(p.text)}"</div>
+    ${hasBlank ? '' : `<div style="font-family:var(--display);font-weight:800;font-size:clamp(20px,5vw,28px);line-height:1.15;text-align:center">"${escapeHtml(p.text)}"</div>`}
     <div class="sub" style="text-align:center;font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:12px">Results</div>
     <div class="answer-card" style="border-color:${aP.color}">
-      <div>${escapeHtml(p.ans[aId])}</div>
+      <div>${aFilled || escapeHtml(p.ans[aId])}</div>
       <div class="author" style="color:${aP.color}">${escapeHtml(aP.name)} · ${counts.a} vote${counts.a===1?'':'s'}</div>
       <div class="vote-bar"><div style="width:${counts.a/total*100}%;background:${aP.color}"></div></div>
     </div>
     <div class="answer-card" style="border-color:${bP.color}">
-      <div>${escapeHtml(p.ans[bId])}</div>
+      <div>${bFilled || escapeHtml(p.ans[bId])}</div>
       <div class="author" style="color:${bP.color}">${escapeHtml(bP.name)} · ${counts.b} vote${counts.b===1?'':'s'}</div>
       <div class="vote-bar"><div style="width:${counts.b/total*100}%;background:${bP.color}"></div></div>
     </div>
@@ -1211,7 +1519,12 @@ function attachPlayerHandlers(){
       const text = (ta.value||'').trim();
       if(text.length<1){ ta.classList.add('shake'); setTimeout(()=>ta.classList.remove('shake'),400); return; }
       channel.pub(`${TOPIC_PREFIX}/${roomCode}/cmd`, 'answer', { pid: me.id, promptId: pid, text });
-      ta.disabled = true; btn.disabled = true; btn.textContent='Submitted ✓'; btn.classList.add('green');
+      // Optimistic local state so the next prompt shows immediately
+      const cp = viewState?.prompts?.find(x=>x.id===pid);
+      if(cp){ cp.ans = { ...(cp.ans||{}), [me.id]: text }; }
+      ta.disabled = true; btn.disabled = true;
+      lastPlayerSig = '';
+      playerRender();
     };
   });
   document.querySelectorAll('.vote-btn').forEach(btn=>{
