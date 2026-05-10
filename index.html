@@ -451,8 +451,10 @@ function saveName(n){ me.name = n.trim().slice(0,20); localStorage.setItem('zant
 function parseHash(){
   const h = location.hash.replace(/^#/,'');
   if(!h) return {view:'home'};
-  if(h.startsWith('host/')) return {view:'host', code:h.slice(5).toUpperCase()};
-  if(h.startsWith('p/')) return {view:'player', code:h.slice(2).toUpperCase()};
+  const [path, query] = h.split('?');
+  const params = new URLSearchParams(query||'');
+  if(path.startsWith('host/')) return {view:'host', code:path.slice(5).toUpperCase(), dev: params.has('dev')};
+  if(path.startsWith('p/')) return {view:'player', code:path.slice(2).toUpperCase()};
   return {view:'home'};
 }
 window.addEventListener('hashchange',()=>{ route = parseHash(); render(); });
@@ -508,6 +510,7 @@ function renderHome(){
           <button class="btn lg blue" id="hostBtn" style="flex:1;min-width:240px">${ICONS.tv}<span>Host on Big Screen</span></button>
           <button class="btn lg" id="joinBtn" style="flex:1;min-width:240px">${ICONS.phone}<span>Join with Phone</span></button>
         </div>
+        <button class="btn alt" id="devBtn" style="padding:12px 18px;min-height:0;font-size:14px">Solo test game (with bots) →</button>
         <div class="help">Open the host page on a TV or laptop. Friends join from their phones with a 4-letter code.</div>
       </div>
     </div>
@@ -518,6 +521,14 @@ function renderHome(){
     const c = (prompt('Room code (4 letters):')||'').trim().toUpperCase();
     if(c.length===4) go(`p/${c}`);
   };
+  document.getElementById('devBtn').onclick = ()=>{
+    const code = genCode();
+    const playerUrl = location.origin + location.pathname + '#p/' + code;
+    // Open player tab from the user gesture so popup blockers allow it
+    const win = window.open(playerUrl, '_blank');
+    if(!win) toast('Allow popups, or open the player link manually');
+    go(`host/${code}?dev`);
+  };
 }
 
 // ---------------- HOST ----------------
@@ -526,6 +537,11 @@ function renderHost(){
   roomCode = route.code;
   if(!hostState) initHostState();
   ensureHostChannel();
+  if(route.dev && !hostState.devSeeded){
+    hostState.devSeeded = true;
+    setTimeout(()=>{ if(hostState.phase==='lobby') addBot(); }, 600);
+    setTimeout(()=>{ if(hostState.phase==='lobby') addBot(); }, 1400);
+  }
   hostRender();
 }
 
@@ -984,7 +1000,7 @@ function playerSig(s, myP){
   const base = `${s.phase}|${s.round}|${s.voteIdx}|${Object.keys(s.players).length}|${myP?.score||0}`;
   if(s.phase==='answering'){
     const mine = s.prompts.filter(p => p.a.includes(me.id));
-    return base + '|' + mine.map(p => `${p.id}:${(p.ans[me.id]||'').trim()?1:0}`).join(',');
+    return base + '|' + mine.map(p => p.id).join(',');
   }
   if(s.phase==='voting' || s.phase==='reveal'){
     const p = s.prompts[s.voteIdx];
