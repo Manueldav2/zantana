@@ -619,6 +619,19 @@ function toast(msg){
   document.body.appendChild(t); setTimeout(()=>t.remove(), 2200);
 }
 
+function leaveGame(){
+  const isMidGame = !!(hostState && hostState.phase !== 'lobby' && hostState.phase !== 'final') || (viewState && ['answering','voting','reveal'].includes(viewState.phase));
+  if(isMidGame && !confirm('Leave the game?')) return;
+  try { if(channel){ channel.end(); } } catch{}
+  try { if(_tickWorker){ _tickWorker.postMessage('stop'); } } catch{}
+  channel = null;
+  hostState = null;
+  viewState = null;
+  role = null;
+  lastPlayerSig = '';
+  location.hash = '';
+}
+
 function fireConfetti(opts={}){
   if(typeof confetti==='undefined') return;
   const colors=['#2D5BFF','#FF3355','#FF9233','#21D26A'];
@@ -1056,6 +1069,7 @@ function hostRender(){
         <div class="pill">Room <span class="smallcode">${roomCode}</span></div>
         <div class="pill">Round ${s.round||0}/${s.totalRounds}</div>
         <div class="pill">${Object.keys(s.players).length} player${Object.keys(s.players).length===1?'':'s'}</div>
+        <button class="pill" id="exitBtn" style="background:rgba(255,51,85,.16);color:var(--red);border-color:rgba(255,51,85,.35);cursor:pointer">Exit</button>
       </div>
     </div>
     <div class="center"><div class="stack host fade-in">${body}</div></div>
@@ -1129,6 +1143,8 @@ function hostRender(){
     const ag = document.getElementById('againBtn');
     if(ag) ag.onclick = resetGame;
   }
+  const exitB = document.getElementById('exitBtn');
+  if(exitB) exitB.onclick = leaveGame;
 }
 
 function renderHostLobby(){
@@ -1425,11 +1441,16 @@ function playerRender(){
     ${showTimer ? `<div class="timer ${left<=5?'warn':''}">${left}s</div>` : ''}
     <div class="header">
       <div>${wordmarkHTML('ZANTANA','sm')}</div>
-      <div class="pill"><span class="dot" style="background:${myP?.color || '#fff'}"></span>${escapeHtml(me.name)} · ${(myP?.score||0).toLocaleString()}</div>
+      <div class="row" style="gap:8px;align-items:center">
+        <div class="pill"><span class="dot" style="background:${myP?.color || '#fff'}"></span>${escapeHtml(me.name)} · ${(myP?.score||0).toLocaleString()}</div>
+        <button class="pill" id="exitBtn" style="background:rgba(255,51,85,.16);color:var(--red);border-color:rgba(255,51,85,.35);cursor:pointer">Exit</button>
+      </div>
     </div>
     <div class="center"><div class="stack fade-in">${body}</div></div>
   `;
   attachPlayerHandlers();
+  const exitB = document.getElementById('exitBtn');
+  if(exitB) exitB.onclick = leaveGame;
 
   if(s.phase==='final' && lastFinalPid !== me.id){
     lastFinalPid = me.id;
@@ -1510,17 +1531,20 @@ function renderPlayerVoting(){
   const hasBlank = /_{3,}/.test(p.text);
   const aFilled = renderFilled(p.text, p.ans[aId]||'?', aP.color);
   const bFilled = renderFilled(p.text, p.ans[bId]||'?', bP.color);
+  const showNames = !!myVote; // names revealed to YOU only after you pick
   return `
     <div class="sub" style="text-align:center;font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--ink-muted)">Vote · ${viewState.voteIdx+1} of ${viewState.prompts.length}</div>
     ${hasBlank ? '' : `<div style="font-family:var(--display);font-weight:800;font-size:clamp(22px,5vw,30px);line-height:1.15;text-align:center;padding:var(--s3) 0">"${escapeHtml(p.text)}"</div>`}
     <button class="answer-card vote-btn ${myVote==='a'?'voted':''}" data-choice="a" data-pid="${p.id}" style="border-color:${aP.color}">
       <div>${aFilled || escapeHtml(p.ans[aId]||'(no answer)')}</div>
+      ${showNames ? `<div class="author" style="color:${aP.color}">${escapeHtml(aP.name)}</div>` : ''}
     </button>
     <div class="versus">VS</div>
     <button class="answer-card vote-btn ${myVote==='b'?'voted':''}" data-choice="b" data-pid="${p.id}" style="border-color:${bP.color}">
       <div>${bFilled || escapeHtml(p.ans[bId]||'(no answer)')}</div>
+      ${showNames ? `<div class="author" style="color:${bP.color}">${escapeHtml(bP.name)}</div>` : ''}
     </button>
-    ${myVote?`<div class="sub" style="text-align:center;color:var(--green);font-weight:800">Vote locked.</div>`:''}
+    ${myVote?`<div class="sub" style="text-align:center;color:var(--green);font-weight:800">Vote locked — you picked <span style="color:${myVote==='a'?aP.color:bP.color}">${escapeHtml(myVote==='a'?aP.name:bP.name)}</span>'s</div>`:''}
   `;
 }
 
