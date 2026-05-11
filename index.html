@@ -293,6 +293,23 @@
   .avatar-wrap{display:inline-flex;flex-direction:column;align-items:center;gap:6px}
   .avatar-name{font-family:var(--display);font-weight:900;letter-spacing:-.01em;font-size:16px;background:#0a0e1a;color:#fff;padding:4px 12px;border-radius:999px;border:2px solid #fff;text-shadow:none}
 
+  /* Quick-fill suggestion pills */
+  .quick-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .quick-pill{
+    background:rgba(255,255,255,.06);
+    border:1.5px solid var(--line);
+    border-radius:999px;
+    padding:8px 14px;
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink-dim);
+    cursor:pointer;
+    transition:background var(--t-fast), border-color var(--t-fast), color var(--t-fast), transform var(--t-fast);
+    line-height:1.2;
+  }
+  .quick-pill:hover{background:rgba(255,146,51,.16);border-color:var(--orange);color:var(--orange);transform:translateY(-1px)}
+  .quick-pill:active{transform:translateY(1px)}
+
   /* Active toggle button (for settings) */
   .btn.alt.active{background:var(--orange);color:var(--accent-ink);box-shadow:0 4px 0 0 color-mix(in srgb, var(--orange) 60%, #000), var(--sh-sm)}
 
@@ -1271,19 +1288,23 @@ function renderHostVoting(reveal){
   const total = counts.a + counts.b || 1;
   const aPct = counts.a/total*100, bPct = counts.b/total*100;
   const hasBlank = /_{3,}/.test(p.text);
-  const aFilled = renderFilled(p.text, p.ans[aId], aP.color);
-  const bFilled = renderFilled(p.text, p.ans[bId], bP.color);
+  // Stay anonymous (neutral border) until reveal — no color leaks
+  const neutral = 'rgba(255,255,255,.18)';
+  const aBorder = reveal ? aP.color : neutral;
+  const bBorder = reveal ? bP.color : neutral;
+  const aFilled = renderFilled(p.text, p.ans[aId], reveal ? aP.color : 'var(--orange)');
+  const bFilled = renderFilled(p.text, p.ans[bId], reveal ? bP.color : 'var(--orange)');
   return `
     ${hasBlank ? '' : `<div class="prompt-big">"${escapeHtml(p.text)}"</div>`}
     <div class="answers">
-      <div class="answer-card" style="border-color:${aP.color}">
+      <div class="answer-card" style="border-color:${aBorder}">
         <div>${aFilled || escapeHtml(p.ans[aId])}</div>
         <div>
           ${reveal ? `<div class="author" style="color:${aP.color}">${escapeHtml(aP.name)} · ${counts.a} vote${counts.a===1?'':'s'}</div>
             <div class="vote-bar"><div style="width:${aPct}%;background:${aP.color}"></div></div>` : ''}
         </div>
       </div>
-      <div class="answer-card" style="border-color:${bP.color}">
+      <div class="answer-card" style="border-color:${bBorder}">
         <div>${bFilled || escapeHtml(p.ans[bId])}</div>
         <div>
           ${reveal ? `<div class="author" style="color:${bP.color}">${escapeHtml(bP.name)} · ${counts.b} vote${counts.b===1?'':'s'}</div>
@@ -1422,6 +1443,11 @@ function playerRender(){
   const left = Math.max(0, Math.ceil((s.deadline - Date.now())/1000));
   const showTimer = ['answering','voting'].includes(s.phase);
 
+  // Auto-submit when answering timer hits zero
+  if(s.phase === 'answering' && left === 0){
+    autoSubmitRemaining();
+  }
+
   const sig = playerSig(s, myP);
   if(sig === lastPlayerSig){
     updateTimerOnly(showTimer, left);
@@ -1478,6 +1504,19 @@ function renderPlayerLobby(){
   `;
 }
 
+function pickPillsForPrompt(promptId, n=4){
+  const out = [];
+  const h = hashStr(String(promptId||''));
+  const used = new Set();
+  let i = 0;
+  while(out.length < n && i < BOT_ANSWERS.length*2){
+    const idx = (h + i*13 + Math.floor(Math.random()*BOT_ANSWERS.length*0.3)) % BOT_ANSWERS.length;
+    if(!used.has(idx)){ out.push(BOT_ANSWERS[idx]); used.add(idx); }
+    i++;
+  }
+  return out;
+}
+
 function renderPlayerAnswering(){
   const mine = viewState.prompts.filter(p => p.a.includes(me.id));
   if(mine.length===0) return `<div class="empty-state">You're not in this round somehow. Sit tight.</div>`;
@@ -1491,13 +1530,18 @@ function renderPlayerAnswering(){
   }
   const p = remaining[0];
   const idx = mine.length - remaining.length + 1;
+  const pills = pickPillsForPrompt(p.id, 4);
   return `
     <div class="prompt-box">
       <div class="sub" style="margin-bottom:var(--s2);font-weight:800;text-transform:uppercase;letter-spacing:.1em;font-size:13px;color:var(--orange)">Prompt ${idx} of ${mine.length}</div>
       <div style="font-family:var(--display);font-size:clamp(22px,5vw,30px);font-weight:800;line-height:1.2;margin-bottom:var(--s4)">${renderPromptText(p.text)}</div>
       <textarea data-pid="${p.id}" rows="2" maxlength="140" placeholder="The funniest answer wins…" autofocus></textarea>
+      <div class="quick-pills">
+        ${pills.map(t=>`<button type="button" class="quick-pill" data-fill="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join('')}
+      </div>
       <div style="height:var(--s3)"></div>
       <button class="btn submit-ans" data-pid="${p.id}" style="width:100%">Submit</button>
+      <div class="sub" style="text-align:center;margin-top:var(--s2);font-size:12px;color:var(--ink-muted)">Time runs out → whatever you've typed gets sent automatically.</div>
     </div>
   `;
 }
@@ -1529,18 +1573,21 @@ function renderPlayerVoting(){
   const [aId,bId] = p.a;
   const aP = viewState.players[aId], bP = viewState.players[bId];
   const hasBlank = /_{3,}/.test(p.text);
-  const aFilled = renderFilled(p.text, p.ans[aId]||'?', aP.color);
-  const bFilled = renderFilled(p.text, p.ans[bId]||'?', bP.color);
   const showNames = !!myVote; // names revealed to YOU only after you pick
+  const neutral = 'rgba(255,255,255,.18)';
+  const aBorder = showNames ? aP.color : neutral;
+  const bBorder = showNames ? bP.color : neutral;
+  const aFilled = renderFilled(p.text, p.ans[aId]||'?', showNames ? aP.color : 'var(--orange)');
+  const bFilled = renderFilled(p.text, p.ans[bId]||'?', showNames ? bP.color : 'var(--orange)');
   return `
     <div class="sub" style="text-align:center;font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:var(--ink-muted)">Vote · ${viewState.voteIdx+1} of ${viewState.prompts.length}</div>
     ${hasBlank ? '' : `<div style="font-family:var(--display);font-weight:800;font-size:clamp(22px,5vw,30px);line-height:1.15;text-align:center;padding:var(--s3) 0">"${escapeHtml(p.text)}"</div>`}
-    <button class="answer-card vote-btn ${myVote==='a'?'voted':''}" data-choice="a" data-pid="${p.id}" style="border-color:${aP.color}">
+    <button class="answer-card vote-btn ${myVote==='a'?'voted':''}" data-choice="a" data-pid="${p.id}" style="border-color:${aBorder}">
       <div>${aFilled || escapeHtml(p.ans[aId]||'(no answer)')}</div>
       ${showNames ? `<div class="author" style="color:${aP.color}">${escapeHtml(aP.name)}</div>` : ''}
     </button>
     <div class="versus">VS</div>
-    <button class="answer-card vote-btn ${myVote==='b'?'voted':''}" data-choice="b" data-pid="${p.id}" style="border-color:${bP.color}">
+    <button class="answer-card vote-btn ${myVote==='b'?'voted':''}" data-choice="b" data-pid="${p.id}" style="border-color:${bBorder}">
       <div>${bFilled || escapeHtml(p.ans[bId]||'(no answer)')}</div>
       ${showNames ? `<div class="author" style="color:${bP.color}">${escapeHtml(bP.name)}</div>` : ''}
     </button>
@@ -1611,7 +1658,29 @@ function renderPlayerFinal(){
   `;
 }
 
+function autoSubmitRemaining(){
+  if(!viewState || !channel || viewState.phase !== 'answering') return;
+  const mine = viewState.prompts.filter(p => p.a.includes(me.id));
+  let didAny = false;
+  for(const p of mine){
+    if((p.ans[me.id]||'').trim()) continue;
+    const ta = document.querySelector(`textarea[data-pid="${p.id}"]`);
+    const typed = ta ? (ta.value||'').trim() : '';
+    const text = typed || BOT_ANSWERS[Math.floor(Math.random()*BOT_ANSWERS.length)];
+    channel.pub(`${TOPIC_PREFIX}/${roomCode}/cmd`, 'answer', { pid: me.id, promptId: p.id, text });
+    p.ans[me.id] = text;
+    didAny = true;
+  }
+  if(didAny){ lastPlayerSig = ''; playerRender(); }
+}
+
 function attachPlayerHandlers(){
+  document.querySelectorAll('.quick-pill').forEach(b=>{
+    b.onclick = ()=>{
+      const ta = document.querySelector('textarea[data-pid]');
+      if(ta){ ta.value = b.dataset.fill || b.textContent; ta.focus(); }
+    };
+  });
   document.querySelectorAll('.submit-ans').forEach(btn=>{
     btn.onclick = ()=>{
       const pid = btn.dataset.pid;
