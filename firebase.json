@@ -1,0 +1,27 @@
+{
+  "hosting": {
+    "site": "zantana",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      ".git/**",
+      ".gitignore",
+      "**/node_modules/**",
+      "README.md",
+      "LICENSE",
+      ".firebaserc"
+    ],
+    "headers": [
+      {
+        "source": "/index.html",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        ]
+      }
+    ],
+    "rewrites": [
+      { "source": "**", "destination": "/index.html" }
+    ]
+  }
+}
